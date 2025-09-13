@@ -1,0 +1,53 @@
+name: CI & Deploy
+
+on:
+  push:
+    branches: ["main"]   # sadece main branch'e push olunca çalışır
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build-test-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1) Repo’yu çek
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2) Node.js kur
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      # 3) Bağımlılıkları yükle
+      - name: Install dependencies
+        run: npm ci
+
+      # 4) TypeScript tip kontrolü
+      - name: Type check
+        run: npm run typecheck
+
+      # 5) Linter çalıştır
+      - name: Lint
+        run: npm run lint
+
+      # 6) Unit testleri çalıştır
+      - name: Run tests
+        run: npm run test -- --run
+
+      # 7) Build
+      - name: Build
+        run: npm run build
+
+      # 8) Vercel Deploy (Yalnızca main branch için)
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}   # Vercel dashboard’dan alınan token
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }} # Vercel'den al
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }} # Vercel'den al
+          working-directory: ./
+          github-token: ${{ secrets.GITHUB_TOKEN }}
